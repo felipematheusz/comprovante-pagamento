@@ -22,34 +22,40 @@ interface LocationClientProps {
 
 export default function LocationClient({
   initialLocation,
-  initialSavedLocations,
+  initialSavedLocations = [],
 }: LocationClientProps) {
   const [location, setLocation] = useState<LocationData>(initialLocation);
   const [savedLocations, setSavedLocations] = useState<LocationWithTimestamp[]>(
-    initialSavedLocations
+    initialSavedLocations || []
   );
+  const [isLoading, setIsLoading] = useState(false);
 
   const updateLocation = async () => {
     try {
+      setIsLoading(true);
       const response = await fetch("/api/location");
       if (!response.ok) throw new Error("Falha ao atualizar localização");
       const newLocation = await response.json();
       setLocation(newLocation);
-      await saveLocationToDB(newLocation);
-      // Atualiza a lista de localizações
-      setSavedLocations([
-        {
-          ...newLocation,
-          id: Date.now().toString(),
-          timestamp: new Date(),
-        } as LocationWithTimestamp,
-        ...savedLocations,
-      ]);
+
+      const savedLocation = await saveLocationToDB(newLocation);
+      if (savedLocation) {
+        setSavedLocations([
+          {
+            ...newLocation,
+            id: Date.now().toString(),
+            timestamp: new Date(),
+          } as LocationWithTimestamp,
+          ...savedLocations,
+        ]);
+      }
     } catch (error) {
       setLocation({
         ...location,
         error: "Erro ao atualizar localização: " + (error as Error).message,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -88,13 +94,16 @@ export default function LocationClient({
             </div>
             <button
               onClick={updateLocation}
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors w-full sm:w-auto"
+              disabled={isLoading}
+              className={`mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors w-full sm:w-auto ${
+                isLoading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
-              Atualizar Localização
+              {isLoading ? "Atualizando..." : "Atualizar Localização"}
             </button>
           </div>
 
-          {savedLocations.length > 0 && (
+          {savedLocations && savedLocations.length > 0 && (
             <div className="w-full max-w-md">
               <h2 className="text-xl font-semibold mb-4">
                 Histórico de Localizações

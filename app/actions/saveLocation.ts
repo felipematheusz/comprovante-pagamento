@@ -18,7 +18,7 @@ export async function saveLocationToDB(location: LocationData) {
     return savedLocation
   } catch (error) {
     console.error('Erro ao salvar localização:', error)
-    throw new Error('Falha ao salvar localização no banco de dados')
+    return null
   }
 }
 
@@ -32,6 +32,6 @@ export async function getLocationsFromDB() {
     return locations
   } catch (error) {
     console.error('Erro ao buscar localizações:', error)
-    throw new Error('Falha ao buscar localizações do banco de dados')
+    return []
   }
 } 
